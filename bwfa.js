@@ -109,33 +109,64 @@ function bfCompile(ir, imports) {
 	varuint(body, 1);
 	body.push(0x7f);
 
-	for (let i=0; i<ir.length; i++) {
-		var ch = ir[i];
-		switch (ch) {
+	var i=0;
+	while (i<ir.length) {
+		let j;
+		switch (ir[i]) {
 			case '+':
-				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41, 1, 0x6a, 0x3a, 0, 0);
+				j = 1;
+				while (ir[i+j] == '+') j++;
+				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41);
+				varuint(body, j&255);
+				body.push(0x6a, 0x3a, 0, 0);
+				i += j;
 				break;
 			case '-':
-				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41, 1, 0x6b, 0x3a, 0, 0);
+				j = 1;
+				while (ir[i+j] == '-') j++;
+				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41);
+				varuint(body, j&255);
+				body.push(0x6b, 0x3a, 0, 0);
+				i += j;
 				break;
 			case '>':
-				body.push(0x20, 0, 0x41, 1, 0x6a, 0x21, 0);
+				j = 1;
+				while (ir[i+j] == '>') j++;
+				body.push(0x20, 0, 0x41);
+				varuint(body, j);
+				body.push(0x6a, 0x21, 0);
+				i += j;
 				break;
 			case '<':
-				body.push(0x20, 0, 0x41, 1, 0x6b, 0x21, 0);
+				j = 1;
+				while (ir[i+j] == '<') j++;
+				body.push(0x20, 0, 0x41);
+				varuint(body, j);
+				body.push(0x6b, 0x21, 0);
+				i += j;
 				break;
 			case '.':
 				body.push(0x20, 0, 0x2d, 0, 0, 0x10, 0);
+				i++;
 				break;
 			case ',':
 				body.push(0x20, 0, 0x10, 1, 0x3a, 0, 0);
+				i++;
 				break;
 			case '[':
-				body.push(0x20, 0, 0x2d, 0, 0, 0x04, 0x40, 0x03, 0x40);
+				if ((ir[i+1] == '-' || ir[i+1] == '+') && ir[i+2] == ']') {
+					body.push(0x20, 0, 0x41, 0, 0x3a, 0, 0);
+					i += 3;
+				} else {
+					body.push(0x20, 0, 0x2d, 0, 0, 0x04, 0x40, 0x03, 0x40);
+					i++;
+				}
 				break;
 			case ']':
 				body.push(0x20, 0, 0x2d, 0, 0, 0x0d, 0, 0x0b, 0x0b);
+				i++;
 				break;
+			default:i++;
 		}
 	}
 
