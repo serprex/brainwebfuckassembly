@@ -113,9 +113,10 @@ function bfCompile(ir, imports) {
 
 	// locals
 	varuint(body, 1);
-	varuint(body, 1);
+	varuint(body, 2);
 	body.push(0x7f);
 
+	ir = ir.replace(/[^\[\]<>.,+-]/g, '');
 	var i=0;
 	while (i<ir.length) {
 		let j;
@@ -124,7 +125,7 @@ function bfCompile(ir, imports) {
 				j = 1;
 				while (ir[i+j] == '+') j++;
 				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41);
-				varuint(body, j&255);
+				varint(body, j&255);
 				body.push(0x6a, 0x3a, 0, 0);
 				i += j;
 				break;
@@ -132,7 +133,7 @@ function bfCompile(ir, imports) {
 				j = 1;
 				while (ir[i+j] == '-') j++;
 				body.push(0x20, 0, 0x20, 0, 0x2d, 0, 0, 0x41);
-				varuint(body, j&255);
+				varint(body, j&255);
 				body.push(0x6b, 0x3a, 0, 0);
 				i += j;
 				break;
@@ -140,7 +141,7 @@ function bfCompile(ir, imports) {
 				j = 1;
 				while (ir[i+j] == '>') j++;
 				body.push(0x20, 0, 0x41);
-				varuint(body, j);
+				varint(body, j);
 				body.push(0x6a, 0x21, 0);
 				i += j;
 				break;
@@ -148,7 +149,7 @@ function bfCompile(ir, imports) {
 				j = 1;
 				while (ir[i+j] == '<') j++;
 				body.push(0x20, 0, 0x41);
-				varuint(body, j);
+				varint(body, j);
 				body.push(0x6b, 0x21, 0);
 				i += j;
 				break;
@@ -160,15 +161,62 @@ function bfCompile(ir, imports) {
 				body.push(0x20, 0, 0x10, 1, 0x3a, 0, 0);
 				i++;
 				break;
-			case '[':
-				if ((ir[i+1] == '-' || ir[i+1] == '+') && ir[i+2] == ']') {
-					body.push(0x20, 0, 0x41, 0, 0x3a, 0, 0);
-					i += 3;
-				} else {
-					body.push(0x20, 0, 0x2d, 0, 0, 0x04, 0x40, 0x03, 0x40);
-					i++;
+			case '[': {
+				for (j = i+1; j < ir.length && !/[<>+-]/.test(ir[j]); j++);
+				if (j < ir.length && ir[j] == ']') {
+					let diffs = [], dv = 0, mindv = 0;
+					for (let i2 = i+1; i2 < j; i2++) {
+						switch (ir[i2]) {
+							case '+':diffs[dv]=(diffs[dv]||0)+1;break;
+							case '-':diffs[dv]=(diffs[dv]||0)-1;break;
+							case '>':dv++;break;
+							case '<':dv--;break;
+						}
+						if (dv < mindv) mindv = dv;
+					}
+					if (dv == 0 && (diffs[0] == -1 || diffs[0] == 1)) {
+						if (mindv < 0) {
+							body.push(0x20, 0, 0x41);
+							varint(body, -mindv);
+							body.push(0x4f, 0x04, 0x40);
+						}
+						for (let key in diffs) {
+							let k = +key;
+							if (k && (dv = diffs[key])) {
+								if (k > 0) {
+									body.push(0x20, 0, 0x20, 0, 0x2d, 0);
+									varuint(body, k);
+								} else {
+									body.push(0x20, 0, 0x41);
+									varint(body, -k);
+									body.push(0x6b, 0x22, 1, 0x20, 1, 0x2d, 0, 0);
+								}
+								body.push(0x20, 0, 0x2d, 0, 0);
+								if (dv > 1 || dv < -1) {
+									body.push(0x41);
+									varint(body, dv);
+									body.push(0x6c);
+								}
+								body.push(~dv ? 0x6a : 0x6b, 0x3a, 0);
+								if (k > 0) {
+									varuint(body, k);
+								} else {
+									body.push(0);
+								}
+							}
+						}
+						body.push(0x20, 0, 0x41, 0, 0x3a, 0, 0);
+						if (mindv < 0) {
+							body.push(0x0b);
+						}
+						i = j + 1;
+						break;
+					}
 				}
+				body.push(0x20, 0, 0x2d, 0, 0, 0x04, 0x40, 0x03, 0x40);
+				i++;
 				break;
+			}
 			case ']':
 				body.push(0x20, 0, 0x2d, 0, 0, 0x0d, 0, 0x0b, 0x0b);
 				i++;
