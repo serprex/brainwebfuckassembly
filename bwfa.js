@@ -198,10 +198,17 @@ function bfCompile(ir, imports) {
 								}
 							}
 						}
-						body.push(0x20, 0, 0x41, 0, 0x3a, 0, 0);
 						if (mindv < 0) {
 							body.push(0x0b);
 						}
+						let finalval = 0;
+						while (ir[j+1] == '+' || ir[j+1] == '-') {
+							finalval += ir[j+1] == '+' ? 1 : -1;
+							j++;
+						}
+						body.push(0x20, 0, 0x41);
+						varint(body, finalval);
+						body.push(0x3a, 0, 0);
 						i = j + 1;
 						break;
 					}
