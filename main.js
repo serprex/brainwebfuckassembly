@@ -1,4 +1,4 @@
-#!/bin/node --expose-wasm
+#!/bin/node
 var fuck = require("./bwfa");
 var fs = require("fs");
 function readline() {
