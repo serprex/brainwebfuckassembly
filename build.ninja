@@ -1,3 +1,0 @@
-rule mkcjs
- command=mkcjs $out $in
-build quire.js:mkcjs bwfa.js

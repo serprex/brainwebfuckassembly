@@ -1,0 +1,21 @@
+{
+  "name": "brainwebfuckassembly",
+  "version": "1.0.0",
+  "description": "Brainfuck to WebAssembly compiler",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "bwfa": "main.js"
+  },
+  "scripts": {
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.8.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/serprex/brainwebfuckassembly.git"
+  },
+  "license": "MIT"
+}
